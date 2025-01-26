@@ -6,13 +6,12 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #define CL_HPP_ENABLE_EXCEPTIONS
 #include <CL/cl.hpp>
 #include <GL/freeglut.h>
 #include <GL/glx.h>
-
-static int sample_rate = 1000;
 
 // ----------------------------------------------------------------------
 // game variables
@@ -21,7 +20,6 @@ static int paused = 0;
 static std::vector<cl_char> field_image;
 static cl_int field_width = 1024;
 static cl_int field_height = 1024;
-static int n_ants = 20;
 static size_t step = 0;
 
 // ----------------------------------------------------------------------
@@ -316,6 +314,8 @@ static void displayTimer_cb(int dummy) {
   glutTimerFunc(refresh_mills, displayTimer_cb, 0);
 }
 
+static int step_count = 0;
+
 static void generationTimer_cb(int dummy) {
   if (paused == 1) {
     glutTimerFunc(gen_mills, generationTimer_cb, 0);
@@ -345,13 +345,22 @@ static void generationTimer_cb(int dummy) {
 
     command_queue.enqueueReleaseGLObjects(&dev_image_vec);
     ++step;
+    ++step_count;
 
-    if (step % sample_rate == 0) {
-      const clock_t now = clock();
-      const double fps = static_cast<double>(sample_rate)
+    const clock_t now = clock();
+    if (now > wall_clock + CLOCKS_PER_SEC) {
+      const double fps = static_cast<double>(step_count)
         / ((now - wall_clock) / CLOCKS_PER_SEC);
-      std::cout << "step[" << step << "],"
-        "fps[" << fps << "]\r" << std::flush;
+      step_count = 0;
+      static std::string report;
+      std::stringstream ss;
+      ss << "step[" << step << "],fps[" << fps << "]";
+      std::string s = ss.str();
+      if (s.size() < report.size()) {
+        s += std::string(report.size() - s.size(), ' ');
+      }
+      report = s;
+      std::cout << report << "\r" << std::flush;
       wall_clock = now;
     }
     if (paused == 2) {
@@ -429,10 +438,6 @@ int main(int argc, char *argv[]) {
           window_height = h;
         }
         break;
-      case 'n':
-        {
-          n_ants = atoi(optarg);
-        }
       case 'i':
         gen_mills = atoi(optarg);
         break;
@@ -447,7 +452,6 @@ int main(int argc, char *argv[]) {
           " [-P]" << std::endl;
         std::cerr << " -w : Field width." << std::endl;
         std::cerr << " -h : Field height." << std::endl;
-        std::cerr << " -n : Number of ants." << std::endl;
         std::cerr << " -i : Step interval in milli seconds." << std::endl;
         std::cerr << " -P : Pause at start. Will be released by 'p' key."
                   << std::endl;
