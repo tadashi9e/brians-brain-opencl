@@ -3,7 +3,7 @@
 #define ST_DYING 1
 #define ST_ON 2
 
-char get(
+inline char get(
     __global unsigned char *map,
     int x,
     int y,
@@ -31,12 +31,11 @@ char get(
 */
 __kernel void bb_next_step(
     __global unsigned char *src,
-    __global unsigned char *dst,
-    int width,
-    int height) {
+    __global unsigned char *dst) {
+  const int width = get_global_size(0);
+  const int height = get_global_size(1);
   const int x = get_global_id(0);
   const int y = get_global_id(1);
-  if (x >= width || y >= height) return;
   int count = 0;
   for (int dy = -1; dy < 2; ++dy) {
     for (int dx = -1; dx < 2; ++dx) {
@@ -66,12 +65,11 @@ __kernel void bb_next_step(
  */
 __kernel void bb_draw_image(
     __global unsigned char *field,
-    __write_only image2d_t image,
-    int width,
-    int height) {
+    __write_only image2d_t image) {
+  const int width = get_global_size(0);
+  const int height = get_global_size(1);
   const int x = get_global_id(0);
   const int y = get_global_id(1);
-  if (x >= width || y >= height) return;
   const char c = get(field, x, y, width, height);
   float r = 0.0, g = 0.0, b = 0.0;
   switch (c) {

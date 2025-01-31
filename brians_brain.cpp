@@ -341,7 +341,8 @@ static void generationTimer_cb(int dummy) {
                                                    global_work_size[1]),
                                        cl::NDRange(local_work_size[0],
                                                    local_work_size[1]));
-    command_queue.finish();
+    // command_queue.finish();
+    command_queue.flush();
 
     command_queue.enqueueReleaseGLObjects(&dev_image_vec);
     ++step;
@@ -571,14 +572,10 @@ int main(int argc, char *argv[]) {
     bb_kernel_next_step = cl::Kernel(program, "bb_next_step");
     bb_kernel_next_step.setArg(0, dev_field_in);
     bb_kernel_next_step.setArg(1, dev_field_out);
-    bb_kernel_next_step.setArg(2, sizeof(cl_int), &elements_size[0]);
-    bb_kernel_next_step.setArg(3, sizeof(cl_int), &elements_size[1]);
 
     bb_kernel_draw_image = cl::Kernel(program, "bb_draw_image");
     bb_kernel_draw_image.setArg(0, dev_field_in);
     bb_kernel_draw_image.setArg(1, dev_image);
-    bb_kernel_draw_image.setArg(2, sizeof(cl_int), &elements_size[0]);
-    bb_kernel_draw_image.setArg(3, sizeof(cl_int), &elements_size[1]);
     command_queue.enqueueWriteBuffer(
         dev_field_in, CL_FALSE, 0,
         sizeof(cl_char) * global_work_size[0] * global_work_size[1],
