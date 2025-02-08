@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#define CL_HPP_TARGET_OPENCL_VERSION 220
 #define CL_HPP_ENABLE_EXCEPTIONS
 #include <CL/opencl.hpp>
 #include <GL/freeglut.h>
@@ -464,15 +465,16 @@ int main(int argc, char *argv[]) {
         break;
       default:
         std::cerr << "Usage: " << argv[0] <<
+          " [-d device]"
           " [-w width]"
           " [-h height]"
           " [-i interval_millis]"
           " [-P]" << std::endl;
-        std::cerr << " -w : Field width." << std::endl;
-        std::cerr << " -h : Field height." << std::endl;
-        std::cerr << " -i : Step interval in milli seconds." << std::endl;
-        std::cerr << " -P : Pause at start. Will be released by 'p' key."
-                  << std::endl;
+        std::cerr << " -d, --device    : Select compute device." << std::endl;
+        std::cerr << " -w, --width     : Field width." << std::endl;
+        std::cerr << " -h, --height    : Field height." << std::endl;
+        std::cerr << " -i, --interval  : Step interval in milli seconds." << std::endl;
+        std::cerr << " -P, --pause     : Pause at start. Will be released by 'p' key." << std::endl;
         exit(1);
       }
     }
@@ -584,9 +586,9 @@ int main(int argc, char *argv[]) {
     /* end init field_init */
 
     /* create buffers */
-    cl::ImageGL image(context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D,
-                      0, rendered_texture, &err);
-    dev_image = image();
+    dev_image = cl::ImageGL(
+        context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D,
+        0, rendered_texture, &err);
     dev_field_in = cl::Buffer(
         context, CL_MEM_READ_WRITE,
         sizeof(cl_char) * global_work_size[0] * global_work_size[1]);

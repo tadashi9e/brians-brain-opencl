@@ -19,3 +19,14 @@ Brian's Brain is a cellular automaton devised by Brian Silverman.
 - brians_brain.cpp
 - brians_brain_kernel.cl
 - Makefile
+
+# Execution
+
+```
+brians_brain [-d device] [-w width] [-h height] [-i interval_millis] [-P]
+ -d, --device    : Select compute device.
+ -w, --width     : Field width.
+ -h, --height    : Field height.
+ -i, --interval  : Step interval in milli seconds.
+ -P, --pause     : Pause at start. Will be released by 'p' key.
+```
