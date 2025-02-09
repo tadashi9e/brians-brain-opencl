@@ -436,17 +436,14 @@ int main(int argc, char *argv[]) {
         {"interval", required_argument, 0, 'i'},
         {"pause", no_argument, 0, 'P'},
         {0, 0, 0}};
-      const int c = getopt_long(argc, argv, "w:h:i:P",
+      const int c = getopt_long(argc, argv, "d:w:h:i:P",
                                 long_options, &option_index);
       if (c == -1) {
         break;
       }
       switch (c) {
-      case 0:
-        if (std::string(long_options[option_index].name) ==
-            "device") {
-          device_index = atoi(optarg);
-        }
+      case 'd':
+        device_index = atoi(optarg);
         break;
       case 'w':
         {
