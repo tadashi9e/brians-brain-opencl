@@ -412,10 +412,15 @@ void bb_init_random_field(std::vector<cl_char>& field_init) {
   }
 }
 
-inline void rtrim(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
+bool with_cl_gl_sharing(const std::string& extensions) {
+  std::stringstream ex_ss(extensions);
+  std::string ex_item;
+  while (std::getline(ex_ss, ex_item, ' ')) {
+    if (ex_item == "cl_khr_gl_sharing") {
+      return true;
+    }
+  }
+  return false;
 }
 
 int main(int argc, char *argv[]) {
@@ -489,43 +494,44 @@ int main(int argc, char *argv[]) {
     bool device_found = false;
     size_t dev_index = 0;
     for (cl::Platform& plat : platforms) {
-      const std::string platvendor = plat.getInfo<CL_PLATFORM_VENDOR>();
-      const std::string platname = plat.getInfo<CL_PLATFORM_NAME>();
-      const std::string platver = plat.getInfo<CL_PLATFORM_VERSION>();
-      std::cout << "platform: vendor[" << platvendor << "]"
-        ",name[" << platname << "]"
-        ",version[" << platver << "]" << std::endl;
-      std::vector<cl::Device> devices;
-      plat.getDevices(CL_DEVICE_TYPE_GPU, &devices);
-      for (cl::Device dev : devices) {
-        const std::string devvendor = dev.getInfo<CL_DEVICE_VENDOR>();
-        const std::string devname = dev.getInfo<CL_DEVICE_NAME>();
-        const std::string devver = dev.getInfo<CL_DEVICE_VERSION>();
-        std::cout << ((dev_index == device_index) ? '*' : ' ') <<
-          "device: vendor[" << devvendor << "]"
-          ",name[" << devname << "]"
-          ",version[" << devver << "]" << std::endl;
-        size_t max_work_group_size;
-        dev.getInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE,
-                    &max_work_group_size);
-        std::cout << "        MAX_WORK_GROUP_SIZE="
-                  << max_work_group_size << std::endl;
-        if (dev_index == device_index) {
-          while (static_cast<size_t>(
-              local_work_size[0] *
-              local_work_size[1]) > max_work_group_size) {
-            local_work_size[0] /= 2;
-            if (static_cast<size_t>(
-                local_work_size[0] *
-                local_work_size[1]) > max_work_group_size) {
-              local_work_size[1] /= 2;
-            }
-            platform = plat;
-            device = dev;
-            device_found = true;
+      for (cl_device_type device_type
+             : {CL_DEVICE_TYPE_CPU, CL_DEVICE_TYPE_GPU}) {
+        std::vector<cl::Device> devices;
+        plat.getDevices(device_type, &devices);
+        for (cl::Device dev : devices) {
+          const std::string extensions = dev.getInfo<CL_DEVICE_EXTENSIONS>();
+          if (!with_cl_gl_sharing(extensions)) {
+            continue;
           }
+          const std::string devvendor = dev.getInfo<CL_DEVICE_VENDOR>();
+          const std::string devname = dev.getInfo<CL_DEVICE_NAME>();
+          const std::string devver = dev.getInfo<CL_DEVICE_VERSION>();
+          std::cout << ((dev_index == device_index) ? '*' : ' ') <<
+            "device[" << dev_index << "]: vendor[" << devvendor << "]"
+            ",name[" << devname << "]"
+            ",version[" << devver << "]" << std::endl;
+          size_t max_work_group_size;
+          dev.getInfo(CL_DEVICE_MAX_WORK_GROUP_SIZE,
+                      &max_work_group_size);
+          std::cout << "        MAX_WORK_GROUP_SIZE="
+                    << max_work_group_size << std::endl;
+          if (dev_index == device_index) {
+            while (static_cast<size_t>(
+                  local_work_size[0] *
+                  local_work_size[1]) > max_work_group_size) {
+              local_work_size[0] /= 2;
+              if (static_cast<size_t>(
+                      local_work_size[0] *
+                      local_work_size[1]) > max_work_group_size) {
+                local_work_size[1] /= 2;
+              }
+              platform = plat;
+              device = dev;
+              device_found = true;
+            }
+          }
+          ++dev_index;
         }
-        ++dev_index;
       }
     }
     if (!device_found) {
